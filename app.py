@@ -1,0 +1,158 @@
+import streamlit as st
+import cmath
+import math
+
+# 1. Page Configuration
+st.set_page_config(page_title="Power System Analyzer", page_icon="⚡", layout="wide")
+
+# 2. Custom CSS for beautiful styling
+st.markdown("""
+<style>
+    .main-header {
+        font-size: 2.8rem;
+        color: #1E88E5;
+        text-align: center;
+        font-weight: 800;
+        margin-bottom: 0px;
+    }
+    .sub-text {
+        text-align: center;
+        color: #6c757d;
+        font-size: 1.2rem;
+        margin-bottom: 40px;
+    }
+    .result-card {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        border-left: 5px solid #1E88E5;
+        box-shadow: 2px 2px 10px rgba(0,0,0,0.05);
+        text-align: center;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown('<p class="main-header">⚡ Per-Unit System Analyzer</p>', unsafe_allow_html=True)
+st.markdown('<p class="sub-text">Complete Assignment Solution Dashboard</p>', unsafe_allow_html=True)
+
+# 3. SIDEBAR: Inputs
+st.sidebar.header("⚙️ System Parameters")
+
+with st.sidebar.expander("1. Common Base & Gen", expanded=True):
+    S_base = st.number_input("Common Base MVA", value=30.0)
+    V_base1 = st.number_input("Zone 1 Base Voltage (kV)", value=6.6)
+    st.divider()
+    G_MVA = st.number_input("Gen MVA", value=30.0)
+    G_kV = st.number_input("Gen kV", value=6.6)
+    G_X_pu = st.number_input("Gen Reactance X (%)", value=12.0) / 100.0
+
+with st.sidebar.expander("2. Transformers", expanded=False):
+    T1_MVA = st.number_input("T1 MVA", value=30.0)
+    T1_kV_Z1 = st.number_input("T1 kV (Gen Side)", value=6.6)
+    T1_kV_Z2 = st.number_input("T1 kV (Line Side)", value=132.0)
+    T1_X_pu = st.number_input("T1 Reactance X (%)", value=8.0) / 100.0
+    st.divider()
+    T2_MVA = st.number_input("T2 MVA", value=25.0)
+    T2_kV_Z2 = st.number_input("T2 kV (Line Side)", value=132.0)
+    T2_kV_Z3 = st.number_input("T2 kV (Load Side)", value=11.0)
+    T2_X_pu = st.number_input("T2 Reactance X (%)", value=7.0) / 100.0
+
+with st.sidebar.expander("3. Line & Load", expanded=False):
+    line_R = st.number_input("Line Resistance (Ω)", value=15.0)
+    line_X = st.number_input("Line Reactance (Ω)", value=45.0)
+    st.divider()
+    load_MW = st.number_input("Load MW", value=18.0)
+    load_pf = st.number_input("Load PF (lagging)", value=0.9)
+    load_kV = st.number_input("Load operating kV", value=11.0)
+
+# 4. BACKGROUND CALCULATIONS
+# Base Values
+V_base2 = V_base1 * (T1_kV_Z2 / T1_kV_Z1)
+V_base3 = V_base2 * (T2_kV_Z3 / T2_kV_Z2)
+
+Z_base1 = (V_base1 ** 2) / S_base
+Z_base2 = (V_base2 ** 2) / S_base
+Z_base3 = (V_base3 ** 2) / S_base
+
+I_base1 = (S_base * 1000) / (math.sqrt(3) * V_base1)
+I_base2 = (S_base * 1000) / (math.sqrt(3) * V_base2)
+I_base3 = (S_base * 1000) / (math.sqrt(3) * V_base3)
+
+# Equipment Per-Unit Reactances
+G_X_new = G_X_pu * ((G_kV / V_base1) ** 2) * (S_base / G_MVA)
+T1_X_new = T1_X_pu * ((T1_kV_Z1 / V_base1) ** 2) * (S_base / T1_MVA)
+T2_X_new = T2_X_pu * ((T2_kV_Z3 / V_base3) ** 2) * (S_base / T2_MVA)
+
+# Line Per-Unit
+Z_line_pu = complex(line_R, line_X) / Z_base2
+
+# Load Per-Unit
+load_MVA = load_MW / load_pf
+S_load_pu = cmath.rect(load_MVA, math.acos(load_pf)) / S_base
+V_load_complex = complex(load_kV / V_base3, 0)
+I_load_pu = (S_load_pu / V_load_complex).conjugate()
+Z_load_pu = V_load_complex / I_load_pu
+
+# Voltage Regulation
+Z_series_terminals = complex(0, T2_X_new) + Z_line_pu + complex(0, T1_X_new)
+V_term_pu = V_load_complex + (I_load_pu * Z_series_terminals)
+V_term_kV = abs(V_term_pu) * V_base1
+percent_VR = ((abs(V_term_pu) - abs(V_load_complex)) / abs(V_load_complex)) * 100
+
+
+# 5. MAIN DASHBOARD
+tab1, tab2 = st.tabs(["📊 Key Results & Assignment Answers", "🔬 Detailed Impedance Network"])
+
+with tab1:
+    st.markdown("### 🎯 Final Voltage Regulation")
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric(label="Terminal Voltage (PU)", value=f"{abs(V_term_pu):.4f} pu")
+    with col2:
+        st.metric(label="Actual Voltage (kV)", value=f"{V_term_kV:.2f} kV")
+    with col3:
+        st.metric(label="Voltage Regulation", value=f"{percent_VR:.2f} %")
+    
+    st.markdown("<br><hr>", unsafe_allow_html=True)
+    
+    # --- ASSIGNMENT SOLUTIONS ORGANIZED BY PROBLEM ---
+    st.markdown("### 📝 Assignment Solutions")
+    st.write("Expand the sections below to see the exact answers for parts 1 through 5 of the per-unit assignment.")
+    
+    with st.expander("Problem 1: Base Values in Each Zone", expanded=True):
+        col_z1, col_z2, col_z3 = st.columns(3)
+        col_z1.markdown(f"**Zone 1 (Generator Circuit)**\n* $V_{{base}} =$ {V_base1:.2f} kV\n* $I_{{base}} =$ {I_base1:.2f} A\n* $Z_{{base}} =$ {Z_base1:.4f} Ω")
+        col_z2.markdown(f"**Zone 2 (Transmission Line)**\n* $V_{{base}} =$ {V_base2:.2f} kV\n* $I_{{base}} =$ {I_base2:.2f} A\n* $Z_{{base}} =$ {Z_base2:.4f} Ω")
+        col_z3.markdown(f"**Zone 3 (Load Circuit)**\n* $V_{{base}} =$ {V_base3:.2f} kV\n* $I_{{base}} =$ {I_base3:.2f} A\n* $Z_{{base}} =$ {Z_base3:.4f} Ω")
+        
+    with st.expander("Problem 2: Per-Unit Reactance of Generator and Transformers"):
+        st.markdown(f"* **Generator:** $X_{{pu}} = j{G_X_new:.4f}$ pu")
+        st.markdown(f"* **Transformer T1:** $X_{{pu}} = j{T1_X_new:.4f}$ pu")
+        st.markdown(f"* **Transformer T2:** $X_{{pu}} = j{T2_X_new:.4f}$ pu")
+
+    with st.expander("Problem 3: Per-Unit Impedance of the Transmission Line"):
+        st.markdown(f"* **Line Impedance:** $Z_{{pu}} = {Z_line_pu.real:.4f} + j{Z_line_pu.imag:.4f}$ pu")
+
+    with st.expander("Problem 4: Per-Unit Representation of the Load"):
+        st.markdown(f"* **Load MVA:** $S_{{pu}} = {S_load_pu.real:.4f} + j{S_load_pu.imag:.4f}$ pu")
+        st.markdown(f"* **Load Current:** $I_{{pu}} = {I_load_pu.real:.4f} + j{I_load_pu.imag:.4f}$ pu")
+        st.markdown(f"* **Load Impedance:** $Z_{{pu}} = {Z_load_pu.real:.4f} + j{Z_load_pu.imag:.4f}$ pu")
+        
+    with st.expander("Problem 5: Voltage Regulation (Generator Terminals)"):
+        st.markdown(f"* **Per-Unit Required Voltage ($V_{{gen\_pu}}$):** {V_term_pu.real:.4f} + j{V_term_pu.imag:.4f} pu")
+        st.markdown(f"* **Magnitude:** {abs(V_term_pu):.4f} pu")
+        st.markdown(f"* **Actual Required Voltage:** {V_term_kV:.2f} kV")
+
+with tab2:
+    st.markdown("### 🧩 Per-Unit Impedance Breakdown")
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    c1, c2, c3 = st.columns(3)
+    c1.markdown(f'<div class="result-card"><b>Transformer 1</b><br><br>X = j{T1_X_new:.4f} pu</div>', unsafe_allow_html=True)
+    c2.markdown(f'<div class="result-card"><b>Transmission Line</b><br><br>Z = {Z_line_pu.real:.4f} + j{Z_line_pu.imag:.4f} pu</div>', unsafe_allow_html=True)
+    c3.markdown(f'<div class="result-card"><b>Transformer 2</b><br><br>X = j{T2_X_new:.4f} pu</div>', unsafe_allow_html=True)
+    
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    st.success(f"**Total Series Impedance ($Z_{{series}}$):** {Z_series_terminals.real:.4f} + j{Z_series_terminals.imag:.4f} pu")
