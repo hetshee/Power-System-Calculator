@@ -9,7 +9,7 @@ st.set_page_config(page_title="Power System Analyzer", page_icon="⚡", layout="
 st.markdown("""
 <style>
       #MainMenu {visibility: hidden;}
-      header {visibility: hidden;}
+      [data-testid="stToolbar"] {visibility: hidden;}
       footer {visibility: hidden;}
     .main-header {
         font-size: 2.8rem;
