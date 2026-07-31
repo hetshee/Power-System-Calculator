@@ -30,7 +30,7 @@ app_mode = st.sidebar.selectbox(
 st.sidebar.markdown("---")
 
 # =====================================================================
-# APP 1: RADIAL SYSTEM (EXACT MATCH TO YOUR PHOTO)
+# APP 1: RADIAL SYSTEM (NEW TERMINAL-STYLE OUTPUT)
 # =====================================================================
 if app_mode == "1. Radial System (Voltage Regulation)":
     st.markdown('<p class="main-header">⚡ Radial System Analyzer</p>', unsafe_allow_html=True)
@@ -64,6 +64,7 @@ if app_mode == "1. Radial System (Voltage Regulation)":
         load_pf = st.number_input("Load PF (lagging)", value=0.9, key="r_loadpf")
         load_kV = st.number_input("Load operating kV", value=11.0, key="r_loadkv")
 
+    # Math Engine
     V_base2 = V_base1 * (T1_kV_Z2 / T1_kV_Z1)
     V_base3 = V_base2 * (T2_kV_Z3 / T2_kV_Z2)
     Z_base1 = (V_base1 ** 2) / S_base
@@ -89,7 +90,6 @@ if app_mode == "1. Radial System (Voltage Regulation)":
     V_term_kV = abs(V_term_pu) * V_base1
     percent_VR = ((abs(V_term_pu) - abs(V_load_complex)) / abs(V_load_complex)) * 100
 
-    # Restored Exact Tab Names
     tab1, tab2 = st.tabs(["📊 Key Results", "🔬 Detailed Impedance Network"])
     
     with tab1:
@@ -100,19 +100,38 @@ if app_mode == "1. Radial System (Voltage Regulation)":
         col3.metric("Voltage Regulation", f"{percent_VR:.2f} %")
         
         st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("### 📝 Step-by-Step Terminal Output")
         
-        # Hidden the extra math in a clean dropdown so your UI stays beautiful!
-        with st.expander("📝 View Step-by-Step Assignment Solutions"):
-            st.markdown("**Problem 1: Base Values in Each Zone**")
-            cz1, cz2, cz3 = st.columns(3)
-            cz1.markdown(f"**Zone 1**\n* $V_{{base}}$ = {V_base1:.2f} kV\n* $I_{{base}}$ = {I_base1:.2f} A\n* $Z_{{base}}$ = {Z_base1:.4f} Ω")
-            cz2.markdown(f"**Zone 2**\n* $V_{{base}}$ = {V_base2:.2f} kV\n* $I_{{base}}$ = {I_base2:.2f} A\n* $Z_{{base}}$ = {Z_base2:.4f} Ω")
-            cz3.markdown(f"**Zone 3**\n* $V_{{base}}$ = {V_base3:.2f} kV\n* $I_{{base}}$ = {I_base3:.2f} A\n* $Z_{{base}}$ = {Z_base3:.4f} Ω")
-            st.divider()
-            st.markdown(f"**Problem 2: Per-Unit Reactance**\n* **Generator:** j{G_X_new:.4f} pu\n* **T1:** j{T1_X_new:.4f} pu\n* **T2:** j{T2_X_new:.4f} pu")
-            st.markdown(f"**Problem 3: Line Impedance**\n* **Line:** {Z_line_pu.real:.4f} + j{Z_line_pu.imag:.4f} pu")
-            st.markdown(f"**Problem 4: Load Representation**\n* **S:** {S_load_pu.real:.4f} + j{S_load_pu.imag:.4f} pu\n* **I:** {I_load_pu.real:.4f} + j{I_load_pu.imag:.4f} pu\n* **Z:** {Z_load_pu.real:.4f} + j{Z_load_pu.imag:.4f} pu")
-            st.markdown(f"**Problem 5: Voltage Regulation**\n* **$V_{{gen\_pu}}$:** {V_term_pu.real:.4f} + j{V_term_pu.imag:.4f} pu")
+        # New Terminal-Style Code Block
+        terminal_output = f"""==================================================
+RESULTS
+==================================================
+
+1. Base Values:
+Zone 1 (Gen):  Vbase = {V_base1:.2f} kV, Ibase = {I_base1:.2f} A, Zbase = {Z_base1:.4f} ohms
+Zone 2 (Line): Vbase = {V_base2:.2f} kV, Ibase = {I_base2:.2f} A, Zbase = {Z_base2:.4f} ohms
+Zone 3 (Load): Vbase = {V_base3:.2f} kV, Ibase = {I_base3:.2f} A, Zbase = {Z_base3:.4f} ohms
+
+2. Equipment Per-Unit Reactances (Common Base):
+Generator X_pu = j{G_X_new:.4f} pu
+Transformer T1 X_pu = j{T1_X_new:.4f} pu
+Transformer T2 X_pu = j{T2_X_new:.4f} pu
+
+3. Transmission Line Per-Unit Impedance:
+Line Z_pu = {Z_line_pu.real:.4f} + j{Z_line_pu.imag:.4f} pu
+
+4. Load Per-Unit Representation:
+Load S_pu = {S_load_pu.real:.4f} + j{S_load_pu.imag:.4f} pu
+Load V_pu = {abs(V_load_complex):.4f} pu (Reference at 0 degrees)
+Load I_pu = {I_load_pu.real:.4f} + j{I_load_pu.imag:.4f} pu
+Load Z_pu = {Z_load_pu.real:.4f} + j{Z_load_pu.imag:.4f} pu
+
+5. Generator Terminal Voltage:
+V_gen (per-unit) = {V_term_pu.real:.4f} + j{V_term_pu.imag:.4f} pu
+Magnitude V_gen_pu = {abs(V_term_pu):.4f} pu
+Actual Required Voltage at Gen Terminals = {V_term_kV:.2f} kV
+"""
+        st.code(terminal_output, language="text")
 
     with tab2:
         st.markdown("### 🧩 Per-Unit Impedance Breakdown")
