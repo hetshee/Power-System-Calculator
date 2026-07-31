@@ -23,7 +23,7 @@ app_mode = st.sidebar.selectbox(
     "Choose your network topology:",
     [
         "1. Radial System (Voltage Regulation)", 
-        "2. Multi-Bus Meshed (Example 5.9)",
+        "2. Multi-Bus Meshed (Example 5.9 Auto-Matrix)",
         "3. Dynamic Y-Bus Builder (PRO Mode)"
     ]
 )
@@ -36,9 +36,7 @@ if app_mode == "1. Radial System (Voltage Regulation)":
     st.markdown('<p class="main-header">⚡ Radial System Analyzer</p>', unsafe_allow_html=True)
     st.markdown('<p class="sub-text">Complete Assignment Solution Dashboard</p>', unsafe_allow_html=True)
 
-    # SIDEBAR: Inputs for App 1
     st.sidebar.header("⚙️ Radial Parameters")
-    
     with st.sidebar.expander("1. Common Base & Gen", expanded=True):
         S_base = st.number_input("Common Base MVA", value=30.0, key="r_sbase")
         V_base1 = st.number_input("Zone 1 Base Voltage (kV)", value=6.6, key="r_vbase1")
@@ -66,14 +64,11 @@ if app_mode == "1. Radial System (Voltage Regulation)":
         load_pf = st.number_input("Load PF (lagging)", value=0.9, key="r_loadpf")
         load_kV = st.number_input("Load operating kV", value=11.0, key="r_loadkv")
 
-    # BACKGROUND CALCULATIONS (App 1)
     V_base2 = V_base1 * (T1_kV_Z2 / T1_kV_Z1)
     V_base3 = V_base2 * (T2_kV_Z3 / T2_kV_Z2)
-
     Z_base1 = (V_base1 ** 2) / S_base
     Z_base2 = (V_base2 ** 2) / S_base
     Z_base3 = (V_base3 ** 2) / S_base
-
     I_base1 = (S_base * 1000) / (math.sqrt(3) * V_base1)
     I_base2 = (S_base * 1000) / (math.sqrt(3) * V_base2)
     I_base3 = (S_base * 1000) / (math.sqrt(3) * V_base3)
@@ -94,9 +89,7 @@ if app_mode == "1. Radial System (Voltage Regulation)":
     V_term_kV = abs(V_term_pu) * V_base1
     percent_VR = ((abs(V_term_pu) - abs(V_load_complex)) / abs(V_load_complex)) * 100
 
-    # MAIN DASHBOARD (App 1)
     tab1, tab2 = st.tabs(["📊 Key Results & Assignment Answers", "🔬 Detailed Impedance Network"])
-
     with tab1:
         st.markdown("### 🎯 Final Voltage Regulation")
         col1, col2, col3 = st.columns(3)
@@ -104,26 +97,20 @@ if app_mode == "1. Radial System (Voltage Regulation)":
         col2.metric("Actual Voltage (kV)", f"{V_term_kV:.2f} kV")
         col3.metric("Voltage Regulation", f"{percent_VR:.2f} %")
         st.markdown("<hr>", unsafe_allow_html=True)
-        
         st.markdown("### 📝 Assignment Solutions")
         with st.expander("Problem 1: Base Values in Each Zone", expanded=True):
             cz1, cz2, cz3 = st.columns(3)
             cz1.markdown(f"**Zone 1**\n* $V_{{base}}$ = {V_base1:.2f} kV\n* $I_{{base}}$ = {I_base1:.2f} A\n* $Z_{{base}}$ = {Z_base1:.4f} Ω")
             cz2.markdown(f"**Zone 2**\n* $V_{{base}}$ = {V_base2:.2f} kV\n* $I_{{base}}$ = {I_base2:.2f} A\n* $Z_{{base}}$ = {Z_base2:.4f} Ω")
             cz3.markdown(f"**Zone 3**\n* $V_{{base}}$ = {V_base3:.2f} kV\n* $I_{{base}}$ = {I_base3:.2f} A\n* $Z_{{base}}$ = {Z_base3:.4f} Ω")
-            
         with st.expander("Problem 2: Per-Unit Reactance"):
             st.markdown(f"* **Generator:** j{G_X_new:.4f} pu\n* **T1:** j{T1_X_new:.4f} pu\n* **T2:** j{T2_X_new:.4f} pu")
-
         with st.expander("Problem 3: Line Impedance"):
             st.markdown(f"* **Line:** {Z_line_pu.real:.4f} + j{Z_line_pu.imag:.4f} pu")
-
         with st.expander("Problem 4: Load Representation"):
             st.markdown(f"* **S:** {S_load_pu.real:.4f} + j{S_load_pu.imag:.4f} pu\n* **I:** {I_load_pu.real:.4f} + j{I_load_pu.imag:.4f} pu\n* **Z:** {Z_load_pu.real:.4f} + j{Z_load_pu.imag:.4f} pu")
-            
         with st.expander("Problem 5: Voltage Regulation"):
             st.markdown(f"* **$V_{{gen\_pu}}$:** {V_term_pu.real:.4f} + j{V_term_pu.imag:.4f} pu\n* **Magnitude:** {abs(V_term_pu):.4f} pu\n* **Actual:** {V_term_kV:.2f} kV")
-
     with tab2:
         st.markdown("### 🧩 Per-Unit Impedance Breakdown")
         c1, c2, c3 = st.columns(3)
@@ -133,15 +120,13 @@ if app_mode == "1. Radial System (Voltage Regulation)":
         st.success(f"**Total Series Impedance ($Z_{{series}}$):** {Z_series_terminals.real:.4f} + j{Z_series_terminals.imag:.4f} pu")
 
 # =====================================================================
-# APP 2: MULTI-BUS MESHED SYSTEM
+# APP 2: MULTI-BUS MESHED SYSTEM (WITH AUTO Y-BUS)
 # =====================================================================
-elif app_mode == "2. Multi-Bus Meshed (Example 5.9)":
+elif app_mode == "2. Multi-Bus Meshed (Example 5.9 Auto-Matrix)":
     st.markdown('<p class="main-header">🌐 Multi-Bus Network Analyzer</p>', unsafe_allow_html=True)
-    st.markdown('<p class="sub-text">Solves per-unit values for Example 5.9</p>', unsafe_allow_html=True)
+    st.markdown('<p class="sub-text">Converts raw parameters to PU and builds Y-Bus automatically</p>', unsafe_allow_html=True)
 
-    # SIDEBAR: Inputs for App 2
-    st.sidebar.header("⚙️ Meshed Parameters")
-    
+    st.sidebar.header("⚙️ Raw Network Parameters")
     S_base_m = st.sidebar.number_input("System Base MVA", value=150.0, key="m_sbase")
 
     with st.sidebar.expander("Generator 1 (Node 1)", expanded=False):
@@ -182,115 +167,132 @@ elif app_mode == "2. Multi-Bus Meshed (Example 5.9)":
         Load_MVA = st.number_input("Load MVA", value=75.0, key="m_loadmva")
         Load_PF = st.number_input("Load PF", value=0.8, key="m_loadpf")
 
-    # BACKGROUND CALCULATIONS (App 2)
+    # Step 1: Base & PU Calculations
     V_base1_m = G1_kV 
     V_base2_m = V_base1_m * (T1_kV_Z2_m / T1_kV_Z1_m)
     V_base3_m = V_base2_m * (T2_kV_Z3_m / T2_kV_Z2_m)
-
     Z_base2_m = (V_base2_m ** 2) / S_base_m
 
     G1_X_new_m = G1_X_pu * (S_base_m / G1_MVA) * ((G1_kV / V_base1_m) ** 2)
     G2_X_new_m = G2_X_pu * (S_base_m / G2_MVA) * ((G2_kV / V_base3_m) ** 2)
-
     T1_X_new_m = T1_X_pu_m * (S_base_m / T1_MVA_m) * ((T1_kV_Z1_m / V_base1_m) ** 2)
     T2_X_new_m = T2_X_pu_m * (S_base_m / T2_MVA_m) * ((T2_kV_Z2_m / V_base2_m) ** 2)
 
     Z34_pu = complex(Z34_R, Z34_X) / Z_base2_m
     Z35_pu = complex(Z35_R, Z35_X) / Z_base2_m
     Z45_pu = complex(Z45_R, Z45_X) / Z_base2_m
-
     Load_pu = Load_MVA / S_base_m
 
-    # DASHBOARD DISPLAY (App 2)
-    st.markdown("### 📊 System Base Values")
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Zone 1 (G1) Base Voltage", f"{V_base1_m:.2f} kV")
-    col2.metric("Zone 2 (Lines) Base Voltage", f"{V_base2_m:.2f} kV")
-    col3.metric("Zone 3 (G2) Base Voltage", f"{V_base3_m:.2f} kV")
-
-    st.markdown("<hr>", unsafe_allow_html=True)
-    st.markdown("### ⚡ Per-Unit Impedance Network")
-
+    # Step 2: Display PU Results
+    st.markdown("### 📊 Step 1: Per-Unit Conversion")
     c1, c2 = st.columns(2)
     with c1:
         st.markdown(f"""
         <div class="result-card" style="border-left-color: #FFC107;">
             <h4>Generators & Transformers</h4>
+            <b>T1 Reactance (Node 1-3):</b> j{T1_X_new_m:.4f} pu <br>
+            <b>T2 Reactance (Node 2-4):</b> j{T2_X_new_m:.4f} pu <br>
             <b>G1 Reactance:</b> j{G1_X_new_m:.4f} pu <br>
-            <b>T1 Reactance:</b> j{T1_X_new_m:.4f} pu <br><br>
-            <b>G2 Reactance:</b> j{G2_X_new_m:.4f} pu <br>
-            <b>T2 Reactance:</b> j{T2_X_new_m:.4f} pu
+            <b>G2 Reactance:</b> j{G2_X_new_m:.4f} pu
         </div>
         """, unsafe_allow_html=True)
-
     with c2:
         st.markdown(f"""
         <div class="result-card" style="border-left-color: #FFC107;">
             <h4>Transmission Lines & Load</h4>
             <b>Line 3-4 ($Z_{{34}}$):</b> {Z34_pu.real:.4f} + j{Z34_pu.imag:.4f} pu <br>
             <b>Line 3-5 ($Z_{{35}}$):</b> {Z35_pu.real:.4f} + j{Z35_pu.imag:.4f} pu <br>
-            <b>Line 4-5 ($Z_{{45}}$):</b> {Z45_pu.real:.4f} + j{Z45_pu.imag:.4f} pu <br><br>
+            <b>Line 4-5 ($Z_{{45}}$):</b> {Z45_pu.real:.4f} + j{Z45_pu.imag:.4f} pu <br>
             <b>Load Apparent Power:</b> {Load_pu:.4f} pu
         </div>
         """, unsafe_allow_html=True)
 
+    # Step 3: Automatic Y-Bus Matrix Construction
+    y13 = 1.0 / complex(0, T1_X_new_m)
+    y24 = 1.0 / complex(0, T2_X_new_m)
+    y34 = 1.0 / Z34_pu
+    y35 = 1.0 / Z35_pu
+    y45 = 1.0 / Z45_pu
+
+    Y_bus = np.zeros((5, 5), dtype=complex)
+    
+    # Off-diagonal elements (Negative Admittances)
+    Y_bus[0, 2] = Y_bus[2, 0] = -y13
+    Y_bus[1, 3] = Y_bus[3, 1] = -y24
+    Y_bus[2, 3] = Y_bus[3, 2] = -y34
+    Y_bus[2, 4] = Y_bus[4, 2] = -y35
+    Y_bus[3, 4] = Y_bus[4, 3] = -y45
+
+    # Diagonal elements (Sum of connected Admittances)
+    Y_bus[0, 0] = y13
+    Y_bus[1, 1] = y24
+    Y_bus[2, 2] = y13 + y34 + y35
+    Y_bus[3, 3] = y24 + y34 + y45
+    Y_bus[4, 4] = y35 + y45
+
+    formatted_Y = pd.DataFrame(Y_bus).map(lambda x: f"{x.real:.4f} {'+' if x.imag >= 0 else '-'} j{abs(x.imag):.4f}")
+    formatted_Y.index = [f"Bus {i+1}" for i in range(5)]
+    formatted_Y.columns = [f"Bus {i+1}" for i in range(5)]
+    
+    st.markdown("<hr>", unsafe_allow_html=True)
+    st.markdown("### 🧮 Step 2: Automatic System Admittance Matrix ($Y_{bus}$)")
+    st.info("The matrix below is generated directly from the raw input parameters above. No manual data entry required!")
+    st.dataframe(formatted_Y, use_container_width=True)
 
 # =====================================================================
-# APP 3: DYNAMIC Y-BUS MATRIX BUILDER (INFINITE BUSES)
+# APP 3: DYNAMIC Y-BUS MATRIX BUILDER (PRO MODE)
 # =====================================================================
 elif app_mode == "3. Dynamic Y-Bus Builder (PRO Mode)":
     st.markdown('<p class="main-header">🚀 Dynamic Y-Bus Matrix Builder</p>', unsafe_allow_html=True)
-    st.markdown('<p class="sub-text">Automatically calculates the Admittance Matrix for any size grid</p>', unsafe_allow_html=True)
+    st.markdown('<p class="sub-text">Build matrices for infinite components using pre-calculated PU values</p>', unsafe_allow_html=True)
 
-    # Setup default interactive table data
+    # Added 'Component' type and Ground (Bus 0) examples
     if 'branch_data' not in st.session_state:
         st.session_state.branch_data = pd.DataFrame({
-            "From Bus": [1, 1, 2],
-            "To Bus": [2, 3, 3],
-            "R (pu)": [0.02, 0.01, 0.03],
-            "X (pu)": [0.04, 0.03, 0.05]
+            "Component": ["Generator 1", "Transformer 1", "Line 3-4", "Load 5"],
+            "From Bus": [1, 1, 3, 5],
+            "To Bus": [0, 3, 4, 0],  # 0 represents Ground
+            "R (pu)": [0.00, 0.00, 0.0930, 1.2],
+            "X (pu)": [0.30, 0.2250, 0.4649, 0.8]
         })
 
-    st.markdown("### 📝 Transmission Line Data")
-    st.caption("Click any cell to edit. Hover over the table and click the '➕ Add row' button at the bottom to expand the grid.")
+    st.markdown("### 📝 Grid Component Data (Per-Unit)")
+    st.info("💡 **PRO TIP:** To add a Generator or a Load, set the 'To Bus' to 0 (Ground). Transformers have R = 0.")
     
-    # st.data_editor creates the magical interactive spreadsheet
     edited_df = st.data_editor(st.session_state.branch_data, num_rows="dynamic", use_container_width=True)
     
     if st.button("Calculate Y-Bus Matrix", type="primary"):
         try:
-            # 1. Find out how many buses exist in the network
-            buses = pd.concat([edited_df["From Bus"], edited_df["To Bus"]]).unique()
-            num_buses = int(max(buses))
-            
-            # 2. Create an empty complex matrix filled with zeros
+            # Find the max bus number (ignoring Bus 0 / Ground)
+            all_buses = pd.concat([edited_df["From Bus"], edited_df["To Bus"]])
+            num_buses = int(all_buses.max())
             Y_bus = np.zeros((num_buses, num_buses), dtype=complex)
             
-            # 3. Loop through the table to build the matrix
             for index, row in edited_df.iterrows():
-                from_bus = int(row["From Bus"]) - 1  # Python arrays start at 0
-                to_bus = int(row["To Bus"]) - 1
+                from_bus = int(row["From Bus"])
+                to_bus = int(row["To Bus"])
                 R = row["R (pu)"]
                 X = row["X (pu)"]
                 
-                # Calculate Admittance (Y = 1 / Z)
                 Z = complex(R, X)
                 Y = 1.0 / Z if Z != 0 else 0
                 
-                # Populate diagonal elements
-                Y_bus[from_bus, from_bus] += Y
-                Y_bus[to_bus, to_bus] += Y
+                # Apply Admittance to the matrix (Adjusting for 0-based Python indexing)
+                if from_bus != 0:
+                    Y_bus[from_bus - 1, from_bus - 1] += Y
+                if to_bus != 0:
+                    Y_bus[to_bus - 1, to_bus - 1] += Y
+                    
+                # Off-diagonal elements (only if neither bus is ground)
+                if from_bus != 0 and to_bus != 0:
+                    Y_bus[from_bus - 1, to_bus - 1] -= Y
+                    Y_bus[to_bus - 1, from_bus - 1] -= Y
                 
-                # Populate off-diagonal elements
-                Y_bus[from_bus, to_bus] -= Y
-                Y_bus[to_bus, from_bus] -= Y
-                
-            # 4. Format the matrix so it looks beautiful and readable
             formatted_Y = pd.DataFrame(Y_bus).map(lambda x: f"{x.real:.4f} {'+' if x.imag >= 0 else '-'} j{abs(x.imag):.4f}")
             formatted_Y.index = [f"Bus {i+1}" for i in range(num_buses)]
             formatted_Y.columns = [f"Bus {i+1}" for i in range(num_buses)]
             
-            st.markdown("### 🧮 System Admittance Matrix ($Y_{bus}$)")
+            st.markdown("### 🧮 Custom Admittance Matrix ($Y_{bus}$)")
             st.dataframe(formatted_Y, use_container_width=True)
             
         except Exception as e:
