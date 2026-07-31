@@ -1,3 +1,7 @@
+text
+streamlit
+pandas
+numpy
 import streamlit as st
 import cmath
 import math
