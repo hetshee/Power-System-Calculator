@@ -30,7 +30,7 @@ app_mode = st.sidebar.selectbox(
 st.sidebar.markdown("---")
 
 # =====================================================================
-# APP 1: RADIAL SYSTEM (NEW TERMINAL-STYLE OUTPUT)
+# APP 1: RADIAL SYSTEM (ORIGINAL BEAUTIFUL UI RESTORED)
 # =====================================================================
 if app_mode == "1. Radial System (Voltage Regulation)":
     st.markdown('<p class="main-header">⚡ Radial System Analyzer</p>', unsafe_allow_html=True)
@@ -47,13 +47,13 @@ if app_mode == "1. Radial System (Voltage Regulation)":
 
     with st.sidebar.expander("2. Transformers", expanded=False):
         T1_MVA = st.number_input("T1 MVA", value=30.0, key="r_t1mva")
-        T1_kV_Z1 = st.number_input("T1 kV (Gen Side)", value=6.6, key="r_t1kv1")
-        T1_kV_Z2 = st.number_input("T1 kV (Line Side)", value=132.0, key="r_t1kv2")
+        T1_kV_Z1 = st.number_input("T1 kV (Zone 1 - Gen)", value=6.6, key="r_t1kv1")
+        T1_kV_Z2 = st.number_input("T1 kV (Zone 2 - Line)", value=132.0, key="r_t1kv2")
         T1_X_pu = st.number_input("T1 Reactance X (%)", value=8.0, key="r_t1x") / 100.0
         st.divider()
         T2_MVA = st.number_input("T2 MVA", value=25.0, key="r_t2mva")
-        T2_kV_Z2 = st.number_input("T2 kV (Line Side)", value=132.0, key="r_t2kv2")
-        T2_kV_Z3 = st.number_input("T2 kV (Load Side)", value=11.0, key="r_t2kv3")
+        T2_kV_Z2 = st.number_input("T2 kV (Zone 2 - Line)", value=132.0, key="r_t2kv2")
+        T2_kV_Z3 = st.number_input("T2 kV (Zone 3 - Load)", value=11.0, key="r_t2kv3")
         T2_X_pu = st.number_input("T2 Reactance X (%)", value=7.0, key="r_t2x") / 100.0
 
     with st.sidebar.expander("3. Line & Load", expanded=False):
@@ -64,12 +64,14 @@ if app_mode == "1. Radial System (Voltage Regulation)":
         load_pf = st.number_input("Load PF (lagging)", value=0.9, key="r_loadpf")
         load_kV = st.number_input("Load operating kV", value=11.0, key="r_loadkv")
 
-    # Math Engine
+    # Math Logic using your script's exact zones
     V_base2 = V_base1 * (T1_kV_Z2 / T1_kV_Z1)
     V_base3 = V_base2 * (T2_kV_Z3 / T2_kV_Z2)
+    
     Z_base1 = (V_base1 ** 2) / S_base
     Z_base2 = (V_base2 ** 2) / S_base
     Z_base3 = (V_base3 ** 2) / S_base
+    
     I_base1 = (S_base * 1000) / (math.sqrt(3) * V_base1)
     I_base2 = (S_base * 1000) / (math.sqrt(3) * V_base2)
     I_base3 = (S_base * 1000) / (math.sqrt(3) * V_base3)
@@ -77,6 +79,7 @@ if app_mode == "1. Radial System (Voltage Regulation)":
     G_X_new = G_X_pu * ((G_kV / V_base1) ** 2) * (S_base / G_MVA)
     T1_X_new = T1_X_pu * ((T1_kV_Z1 / V_base1) ** 2) * (S_base / T1_MVA)
     T2_X_new = T2_X_pu * ((T2_kV_Z3 / V_base3) ** 2) * (S_base / T2_MVA)
+    
     Z_line_pu = complex(line_R, line_X) / Z_base2
 
     load_MVA = load_MW / load_pf
@@ -99,39 +102,26 @@ if app_mode == "1. Radial System (Voltage Regulation)":
         col2.metric("Actual Voltage (kV)", f"{V_term_kV:.2f} kV")
         col3.metric("Voltage Regulation", f"{percent_VR:.2f} %")
         
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("### 📝 Step-by-Step Terminal Output")
+        st.markdown("<hr>", unsafe_allow_html=True)
+        st.markdown("### 📝 Assignment Solutions")
         
-        # New Terminal-Style Code Block
-        terminal_output = f"""==================================================
-RESULTS
-==================================================
-
-1. Base Values:
-Zone 1 (Gen):  Vbase = {V_base1:.2f} kV, Ibase = {I_base1:.2f} A, Zbase = {Z_base1:.4f} ohms
-Zone 2 (Line): Vbase = {V_base2:.2f} kV, Ibase = {I_base2:.2f} A, Zbase = {Z_base2:.4f} ohms
-Zone 3 (Load): Vbase = {V_base3:.2f} kV, Ibase = {I_base3:.2f} A, Zbase = {Z_base3:.4f} ohms
-
-2. Equipment Per-Unit Reactances (Common Base):
-Generator X_pu = j{G_X_new:.4f} pu
-Transformer T1 X_pu = j{T1_X_new:.4f} pu
-Transformer T2 X_pu = j{T2_X_new:.4f} pu
-
-3. Transmission Line Per-Unit Impedance:
-Line Z_pu = {Z_line_pu.real:.4f} + j{Z_line_pu.imag:.4f} pu
-
-4. Load Per-Unit Representation:
-Load S_pu = {S_load_pu.real:.4f} + j{S_load_pu.imag:.4f} pu
-Load V_pu = {abs(V_load_complex):.4f} pu (Reference at 0 degrees)
-Load I_pu = {I_load_pu.real:.4f} + j{I_load_pu.imag:.4f} pu
-Load Z_pu = {Z_load_pu.real:.4f} + j{Z_load_pu.imag:.4f} pu
-
-5. Generator Terminal Voltage:
-V_gen (per-unit) = {V_term_pu.real:.4f} + j{V_term_pu.imag:.4f} pu
-Magnitude V_gen_pu = {abs(V_term_pu):.4f} pu
-Actual Required Voltage at Gen Terminals = {V_term_kV:.2f} kV
-"""
-        st.code(terminal_output, language="text")
+        with st.expander("Problem 1: Base Values in Each Zone", expanded=True):
+            cz1, cz2, cz3 = st.columns(3)
+            cz1.markdown(f"**Zone 1**\n* V_base = {V_base1:.2f} kV\n* I_base = {I_base1:.2f} A\n* Z_base = {Z_base1:.4f} Ω")
+            cz2.markdown(f"**Zone 2**\n* V_base = {V_base2:.2f} kV\n* I_base = {I_base2:.2f} A\n* Z_base = {Z_base2:.4f} Ω")
+            cz3.markdown(f"**Zone 3**\n* V_base = {V_base3:.2f} kV\n* I_base = {I_base3:.2f} A\n* Z_base = {Z_base3:.4f} Ω")
+            
+        with st.expander("Problem 2: Per-Unit Reactance"):
+            st.markdown(f"* **Generator:** j{G_X_new:.4f} pu\n* **T1:** j{T1_X_new:.4f} pu\n* **T2:** j{T2_X_new:.4f} pu")
+            
+        with st.expander("Problem 3: Line Impedance"):
+            st.markdown(f"* **Line Z_pu:** {Z_line_pu.real:.4f} + j{Z_line_pu.imag:.4f} pu")
+            
+        with st.expander("Problem 4: Load Representation"):
+            st.markdown(f"* **S_pu:** {S_load_pu.real:.4f} + j{S_load_pu.imag:.4f} pu\n* **I_pu:** {I_load_pu.real:.4f} + j{I_load_pu.imag:.4f} pu\n* **Z_pu:** {Z_load_pu.real:.4f} + j{Z_load_pu.imag:.4f} pu")
+            
+        with st.expander("Problem 5: Voltage Regulation"):
+            st.markdown(f"* **V_gen (per-unit):** {V_term_pu.real:.4f} + j{V_term_pu.imag:.4f} pu\n* **Magnitude V_gen_pu:** {abs(V_term_pu):.4f} pu\n* **Actual Required Voltage:** {V_term_kV:.2f} kV")
 
     with tab2:
         st.markdown("### 🧩 Per-Unit Impedance Breakdown")
@@ -139,7 +129,7 @@ Actual Required Voltage at Gen Terminals = {V_term_kV:.2f} kV
         c1.markdown(f'<div class="result-card"><b>T1</b><br>j{T1_X_new:.4f} pu</div>', unsafe_allow_html=True)
         c2.markdown(f'<div class="result-card"><b>Line</b><br>{Z_line_pu.real:.4f} + j{Z_line_pu.imag:.4f} pu</div>', unsafe_allow_html=True)
         c3.markdown(f'<div class="result-card"><b>T2</b><br>j{T2_X_new:.4f} pu</div>', unsafe_allow_html=True)
-        st.success(f"**Total Series Impedance ($Z_{{series}}$):** {Z_series_terminals.real:.4f} + j{Z_series_terminals.imag:.4f} pu")
+        st.success(f"**Total Series Impedance:** {Z_series_terminals.real:.4f} + j{Z_series_terminals.imag:.4f} pu")
 
 # =====================================================================
 # APP 2: MULTI-BUS MESHED SYSTEM (EXAMPLE 5.9)
