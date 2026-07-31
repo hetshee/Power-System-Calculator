@@ -30,7 +30,7 @@ app_mode = st.sidebar.selectbox(
 st.sidebar.markdown("---")
 
 # =====================================================================
-# APP 1: RADIAL SYSTEM (FULLY RESTORED ANSWERS)
+# APP 1: RADIAL SYSTEM (EXACT MATCH TO YOUR PHOTO)
 # =====================================================================
 if app_mode == "1. Radial System (Voltage Regulation)":
     st.markdown('<p class="main-header">⚡ Radial System Analyzer</p>', unsafe_allow_html=True)
@@ -89,7 +89,8 @@ if app_mode == "1. Radial System (Voltage Regulation)":
     V_term_kV = abs(V_term_pu) * V_base1
     percent_VR = ((abs(V_term_pu) - abs(V_load_complex)) / abs(V_load_complex)) * 100
 
-    tab1, tab2 = st.tabs(["📊 Key Results & Assignment Answers", "🔬 Detailed Impedance Network"])
+    # Restored Exact Tab Names
+    tab1, tab2 = st.tabs(["📊 Key Results", "🔬 Detailed Impedance Network"])
     
     with tab1:
         st.markdown("### 🎯 Final Voltage Regulation")
@@ -97,23 +98,21 @@ if app_mode == "1. Radial System (Voltage Regulation)":
         col1.metric("Terminal Voltage (PU)", f"{abs(V_term_pu):.4f} pu")
         col2.metric("Actual Voltage (kV)", f"{V_term_kV:.2f} kV")
         col3.metric("Voltage Regulation", f"{percent_VR:.2f} %")
-        st.markdown("<hr>", unsafe_allow_html=True)
         
-        # ---> THIS IS THE SECTION I ACCIDENTALLY DELETED! RESTORED. <---
-        st.markdown("### 📝 Assignment Solutions")
-        with st.expander("Problem 1: Base Values in Each Zone", expanded=True):
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        # Hidden the extra math in a clean dropdown so your UI stays beautiful!
+        with st.expander("📝 View Step-by-Step Assignment Solutions"):
+            st.markdown("**Problem 1: Base Values in Each Zone**")
             cz1, cz2, cz3 = st.columns(3)
             cz1.markdown(f"**Zone 1**\n* $V_{{base}}$ = {V_base1:.2f} kV\n* $I_{{base}}$ = {I_base1:.2f} A\n* $Z_{{base}}$ = {Z_base1:.4f} Ω")
             cz2.markdown(f"**Zone 2**\n* $V_{{base}}$ = {V_base2:.2f} kV\n* $I_{{base}}$ = {I_base2:.2f} A\n* $Z_{{base}}$ = {Z_base2:.4f} Ω")
             cz3.markdown(f"**Zone 3**\n* $V_{{base}}$ = {V_base3:.2f} kV\n* $I_{{base}}$ = {I_base3:.2f} A\n* $Z_{{base}}$ = {Z_base3:.4f} Ω")
-        with st.expander("Problem 2: Per-Unit Reactance"):
-            st.markdown(f"* **Generator:** j{G_X_new:.4f} pu\n* **T1:** j{T1_X_new:.4f} pu\n* **T2:** j{T2_X_new:.4f} pu")
-        with st.expander("Problem 3: Line Impedance"):
-            st.markdown(f"* **Line:** {Z_line_pu.real:.4f} + j{Z_line_pu.imag:.4f} pu")
-        with st.expander("Problem 4: Load Representation"):
-            st.markdown(f"* **S:** {S_load_pu.real:.4f} + j{S_load_pu.imag:.4f} pu\n* **I:** {I_load_pu.real:.4f} + j{I_load_pu.imag:.4f} pu\n* **Z:** {Z_load_pu.real:.4f} + j{Z_load_pu.imag:.4f} pu")
-        with st.expander("Problem 5: Voltage Regulation"):
-            st.markdown(f"* **$V_{{gen\_pu}}$:** {V_term_pu.real:.4f} + j{V_term_pu.imag:.4f} pu\n* **Magnitude:** {abs(V_term_pu):.4f} pu\n* **Actual:** {V_term_kV:.2f} kV")
+            st.divider()
+            st.markdown(f"**Problem 2: Per-Unit Reactance**\n* **Generator:** j{G_X_new:.4f} pu\n* **T1:** j{T1_X_new:.4f} pu\n* **T2:** j{T2_X_new:.4f} pu")
+            st.markdown(f"**Problem 3: Line Impedance**\n* **Line:** {Z_line_pu.real:.4f} + j{Z_line_pu.imag:.4f} pu")
+            st.markdown(f"**Problem 4: Load Representation**\n* **S:** {S_load_pu.real:.4f} + j{S_load_pu.imag:.4f} pu\n* **I:** {I_load_pu.real:.4f} + j{I_load_pu.imag:.4f} pu\n* **Z:** {Z_load_pu.real:.4f} + j{Z_load_pu.imag:.4f} pu")
+            st.markdown(f"**Problem 5: Voltage Regulation**\n* **$V_{{gen\_pu}}$:** {V_term_pu.real:.4f} + j{V_term_pu.imag:.4f} pu")
 
     with tab2:
         st.markdown("### 🧩 Per-Unit Impedance Breakdown")
