@@ -186,8 +186,7 @@ if app_mode == "1. Radial System (Voltage & Faults)":
         st.markdown(f"* **Positive Sequence ($Z_1$):** {Z1_fault.real:.4f} + j{Z1_fault.imag:.4f} pu")
         st.markdown(f"* **Negative Sequence ($Z_2$):** {Z2_fault.real:.4f} + j{Z2_fault.imag:.4f} pu")
         st.markdown(f"* **Zero Sequence ($Z_0$):** {Z0_fault.real:.4f} + j{Z0_fault.imag:.4f} pu")
-
-# =====================================================================
+        # =====================================================================
 # APP 2: MULTI-BUS MESHED SYSTEM (EXAMPLE 5.9)
 # =====================================================================
 elif app_mode == "2. Multi-Bus Meshed (Example 5.9 Auto-Matrix)":
@@ -386,6 +385,7 @@ elif app_mode == "3. Ultimate Auto-Matrix (Raw Data Input)":
             
             st.markdown("<hr>", unsafe_allow_html=True)
             st.markdown("### 🧮 Final System Admittance Matrix ($Y_{bus}$)")
-            st.dataframe(formatted_Y, use_container_eidth=true)
-    except Exception as e:
-            st:error(f"Calculation Error: Please ensure all Bus Numbers in your components exist in the bus voltages table. Detail: {e}")
+            st.dataframe(formatted_Y, use_container_width=True)
+
+        except Exception as e:
+            st.error(f"Calculation Error: Please ensure all Bus Numbers in your components exist in the Bus Voltages table. Detail: {e}")
