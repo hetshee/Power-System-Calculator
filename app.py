@@ -386,3 +386,6 @@ elif app_mode == "3. Ultimate Auto-Matrix (Raw Data Input)":
             
             st.markdown("<hr>", unsafe_allow_html=True)
             st.markdown("### 🧮 Final System Admittance Matrix ($Y_{bus}$)")
+            st.dataframe(formatted_Y, use_container_eidth=true)
+except Exception as e:
+            st:error(f"Calculation Error: Please ensure all Bus Numbers in your components exist in the bus voltages table. Detail: {e}")
