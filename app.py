@@ -22,7 +22,7 @@ st.sidebar.header("🔀 Select Calculator")
 app_mode = st.sidebar.selectbox(
     "Choose your network topology:",
     [
-        "1. Radial System (Voltage Regulation)", 
+        "1. Radial System (Voltage & Faults)", 
         "2. Multi-Bus Meshed (Example 5.9 Auto-Matrix)",
         "3. Ultimate Auto-Matrix (Raw Data Input)"
     ]
@@ -30,11 +30,11 @@ app_mode = st.sidebar.selectbox(
 st.sidebar.markdown("---")
 
 # =====================================================================
-# APP 1: RADIAL SYSTEM (ORIGINAL BEAUTIFUL UI RESTORED)
+# APP 1: RADIAL SYSTEM (WITH ALL FAULTS ADDED)
 # =====================================================================
-if app_mode == "1. Radial System (Voltage Regulation)":
+if app_mode == "1. Radial System (Voltage & Faults)":
     st.markdown('<p class="main-header">⚡ Radial System Analyzer</p>', unsafe_allow_html=True)
-    st.markdown('<p class="sub-text">Complete Assignment Solution Dashboard</p>', unsafe_allow_html=True)
+    st.markdown('<p class="sub-text">Complete Assignment & Fault Solution Dashboard</p>', unsafe_allow_html=True)
 
     st.sidebar.header("⚙️ Radial Parameters")
     with st.sidebar.expander("1. Common Base & Gen", expanded=True):
@@ -63,8 +63,14 @@ if app_mode == "1. Radial System (Voltage Regulation)":
         load_MW = st.number_input("Load MW", value=18.0, key="r_loadmw")
         load_pf = st.number_input("Load PF (lagging)", value=0.9, key="r_loadpf")
         load_kV = st.number_input("Load operating kV", value=11.0, key="r_loadkv")
+        
+    with st.sidebar.expander("4. Fault Analysis (at Load Bus)", expanded=False):
+        st.caption("Sequence Impedance Multipliers (relative to Z1)")
+        Z2_mult = st.number_input("Negative Seq (Z2/Z1) ratio", value=1.0)
+        Z0_mult = st.number_input("Zero Seq (Z0/Z1) ratio", value=3.0)
+        Z_f = st.number_input("Fault Impedance Zf (pu)", value=0.0)
 
-    # Math Logic using your script's exact zones
+    # --- UNTOUCHED PER UNIT CALCULATOR MATH ---
     V_base2 = V_base1 * (T1_kV_Z2 / T1_kV_Z1)
     V_base3 = V_base2 * (T2_kV_Z3 / T2_kV_Z2)
     
@@ -93,7 +99,39 @@ if app_mode == "1. Radial System (Voltage Regulation)":
     V_term_kV = abs(V_term_pu) * V_base1
     percent_VR = ((abs(V_term_pu) - abs(V_load_complex)) / abs(V_load_complex)) * 100
 
-    tab1, tab2 = st.tabs(["📊 Key Results", "🔬 Detailed Impedance Network"])
+    # --- EXPANDED FAULT MATH ENGINE ---
+    # Total Thevenin impedance at Load Bus (Zone 3)
+    Z1_fault = complex(0, G_X_new) + Z_series_terminals
+    Z2_fault = Z1_fault * Z2_mult
+    Z0_fault = Z1_fault * Z0_mult
+    Z_f_complex = complex(Z_f, 0)
+    
+    V_pre_fault = 1.0 # 1.0 pu standard assumption
+    
+    # Fault Magnitudes (pu)
+    # LLL and LLLG
+    I_LLL_pu = abs(V_pre_fault / Z1_fault) 
+    
+    # LL
+    I_LL_pu = abs((math.sqrt(3) * V_pre_fault) / (Z1_fault + Z2_fault))
+    
+    # LG
+    I_LG_pu = abs((3.0 * V_pre_fault) / (Z1_fault + Z2_fault + Z0_fault + complex(3 * Z_f, 0)))
+    
+    # LLG
+    Z_p = (Z2_fault * (Z0_fault + 3 * Z_f_complex)) / (Z2_fault + Z0_fault + 3 * Z_f_complex)
+    I1_LLG = V_pre_fault / (Z1_fault + Z_p)
+    I0_LLG = -I1_LLG * (Z2_fault / (Z2_fault + Z0_fault + 3 * Z_f_complex))
+    I_LLG_pu = abs(3.0 * I0_LLG)
+    
+    # Fault Magnitudes (Amps) - using Zone 3 base current
+    I_LLL_A = I_LLL_pu * I_base3
+    I_LL_A = I_LL_pu * I_base3
+    I_LG_A = I_LG_pu * I_base3
+    I_LLG_A = I_LLG_pu * I_base3
+
+    # UI Tabs
+    tab1, tab2, tab3 = st.tabs(["📊 Key Results", "🔬 Detailed Impedance Network", "💥 Fault Analysis"])
     
     with tab1:
         st.markdown("### 🎯 Final Voltage Regulation")
@@ -130,6 +168,24 @@ if app_mode == "1. Radial System (Voltage Regulation)":
         c2.markdown(f'<div class="result-card"><b>Line</b><br>{Z_line_pu.real:.4f} + j{Z_line_pu.imag:.4f} pu</div>', unsafe_allow_html=True)
         c3.markdown(f'<div class="result-card"><b>T2</b><br>j{T2_X_new:.4f} pu</div>', unsafe_allow_html=True)
         st.success(f"**Total Series Impedance:** {Z_series_terminals.real:.4f} + j{Z_series_terminals.imag:.4f} pu")
+
+    with tab3:
+        st.markdown("### 💥 Short Circuit Fault Analysis")
+        st.info("Calculates symmetrical and unsymmetrical faults at the **Load Bus (Zone 3)** using Thevenin equivalent sequence impedances.")
+        
+        f1, f2 = st.columns(2)
+        f1.metric("Three-Phase (LLL & LLLG)", f"{I_LLL_A:,.0f} A", f"{I_LLL_pu:.4f} pu", delta_color="off")
+        f2.metric("Line-to-Line (LL)", f"{I_LL_A:,.0f} A", f"{I_LL_pu:.4f} pu", delta_color="off")
+        
+        f3, f4 = st.columns(2)
+        f3.metric("Line-to-Ground (LG)", f"{I_LG_A:,.0f} A", f"{I_LG_pu:.4f} pu", delta_color="off")
+        f4.metric("Double Line-to-Ground (LLG)", f"{I_LLG_A:,.0f} A", f"{I_LLG_pu:.4f} pu", delta_color="off")
+        
+        st.markdown("<hr>", unsafe_allow_html=True)
+        st.markdown("#### ⚙️ Thevenin Sequence Impedances (at Fault Point)")
+        st.markdown(f"* **Positive Sequence ($Z_1$):** {Z1_fault.real:.4f} + j{Z1_fault.imag:.4f} pu")
+        st.markdown(f"* **Negative Sequence ($Z_2$):** {Z2_fault.real:.4f} + j{Z2_fault.imag:.4f} pu")
+        st.markdown(f"* **Zero Sequence ($Z_0$):** {Z0_fault.real:.4f} + j{Z0_fault.imag:.4f} pu")
 
 # =====================================================================
 # APP 2: MULTI-BUS MESHED SYSTEM (EXAMPLE 5.9)
@@ -330,7 +386,3 @@ elif app_mode == "3. Ultimate Auto-Matrix (Raw Data Input)":
             
             st.markdown("<hr>", unsafe_allow_html=True)
             st.markdown("### 🧮 Final System Admittance Matrix ($Y_{bus}$)")
-            st.dataframe(formatted_Y, use_container_width=True)
-
-        except Exception as e:
-            st.error(f"Calculation Error: Please ensure all Bus Numbers in your components exist in the Bus Voltages table. Detail: {e}")
