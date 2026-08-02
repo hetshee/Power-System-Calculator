@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 
 # 1. Page Configuration (Must be first)
-st.set_page_config(page_title="Power System Analyzer Suite", page_icon="⚡", layout="wide")
+st.set_page_config(page_title="Power System Analyzer Suite", page_icon="⚡", layout="wide", initial_sidebar_state="expanded")
 
 # 2. Custom CSS
 st.markdown("""
