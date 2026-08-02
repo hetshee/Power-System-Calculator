@@ -22,19 +22,20 @@ st.sidebar.header("🔀 Select Calculator")
 app_mode = st.sidebar.selectbox(
     "Choose your network topology:",
     [
-        "1. Radial System (Voltage & Faults)", 
-        "2. Multi-Bus Meshed (Example 5.9 Auto-Matrix)",
-        "3. Ultimate Auto-Matrix (Raw Data Input)"
+        "1. Radial System (Voltage Regulation)", 
+        "2. Fault Analysis Calculator",
+        "3. Multi-Bus Meshed (Example 5.9 Auto-Matrix)",
+        "4. Ultimate Auto-Matrix (Raw Data Input)"
     ]
 )
 st.sidebar.markdown("---")
 
 # =====================================================================
-# APP 1: RADIAL SYSTEM (WITH ALL FAULTS ADDED)
+# APP 1: RADIAL SYSTEM (VOLTAGE REGULATION ONLY)
 # =====================================================================
-if app_mode == "1. Radial System (Voltage & Faults)":
+if app_mode == "1. Radial System (Voltage Regulation)":
     st.markdown('<p class="main-header">⚡ Radial System Analyzer</p>', unsafe_allow_html=True)
-    st.markdown('<p class="sub-text">Complete Assignment & Fault Solution Dashboard</p>', unsafe_allow_html=True)
+    st.markdown('<p class="sub-text">Complete Assignment Solution Dashboard</p>', unsafe_allow_html=True)
 
     st.sidebar.header("⚙️ Radial Parameters")
     with st.sidebar.expander("1. Common Base & Gen", expanded=True):
@@ -63,21 +64,12 @@ if app_mode == "1. Radial System (Voltage & Faults)":
         load_MW = st.number_input("Load MW", value=18.0, key="r_loadmw")
         load_pf = st.number_input("Load PF (lagging)", value=0.9, key="r_loadpf")
         load_kV = st.number_input("Load operating kV", value=11.0, key="r_loadkv")
-        
-    with st.sidebar.expander("4. Fault Analysis (at Load Bus)", expanded=False):
-        st.caption("Sequence Impedance Multipliers (relative to Z1)")
-        Z2_mult = st.number_input("Negative Seq (Z2/Z1) ratio", value=1.0)
-        Z0_mult = st.number_input("Zero Seq (Z0/Z1) ratio", value=3.0)
-        Z_f = st.number_input("Fault Impedance Zf (pu)", value=0.0)
 
-    # --- UNTOUCHED PER UNIT CALCULATOR MATH ---
     V_base2 = V_base1 * (T1_kV_Z2 / T1_kV_Z1)
     V_base3 = V_base2 * (T2_kV_Z3 / T2_kV_Z2)
-    
     Z_base1 = (V_base1 ** 2) / S_base
     Z_base2 = (V_base2 ** 2) / S_base
     Z_base3 = (V_base3 ** 2) / S_base
-    
     I_base1 = (S_base * 1000) / (math.sqrt(3) * V_base1)
     I_base2 = (S_base * 1000) / (math.sqrt(3) * V_base2)
     I_base3 = (S_base * 1000) / (math.sqrt(3) * V_base3)
@@ -85,7 +77,6 @@ if app_mode == "1. Radial System (Voltage & Faults)":
     G_X_new = G_X_pu * ((G_kV / V_base1) ** 2) * (S_base / G_MVA)
     T1_X_new = T1_X_pu * ((T1_kV_Z1 / V_base1) ** 2) * (S_base / T1_MVA)
     T2_X_new = T2_X_pu * ((T2_kV_Z3 / V_base3) ** 2) * (S_base / T2_MVA)
-    
     Z_line_pu = complex(line_R, line_X) / Z_base2
 
     load_MVA = load_MW / load_pf
@@ -99,39 +90,7 @@ if app_mode == "1. Radial System (Voltage & Faults)":
     V_term_kV = abs(V_term_pu) * V_base1
     percent_VR = ((abs(V_term_pu) - abs(V_load_complex)) / abs(V_load_complex)) * 100
 
-    # --- EXPANDED FAULT MATH ENGINE ---
-    # Total Thevenin impedance at Load Bus (Zone 3)
-    Z1_fault = complex(0, G_X_new) + Z_series_terminals
-    Z2_fault = Z1_fault * Z2_mult
-    Z0_fault = Z1_fault * Z0_mult
-    Z_f_complex = complex(Z_f, 0)
-    
-    V_pre_fault = 1.0 # 1.0 pu standard assumption
-    
-    # Fault Magnitudes (pu)
-    # LLL and LLLG
-    I_LLL_pu = abs(V_pre_fault / Z1_fault) 
-    
-    # LL
-    I_LL_pu = abs((math.sqrt(3) * V_pre_fault) / (Z1_fault + Z2_fault))
-    
-    # LG
-    I_LG_pu = abs((3.0 * V_pre_fault) / (Z1_fault + Z2_fault + Z0_fault + complex(3 * Z_f, 0)))
-    
-    # LLG
-    Z_p = (Z2_fault * (Z0_fault + 3 * Z_f_complex)) / (Z2_fault + Z0_fault + 3 * Z_f_complex)
-    I1_LLG = V_pre_fault / (Z1_fault + Z_p)
-    I0_LLG = -I1_LLG * (Z2_fault / (Z2_fault + Z0_fault + 3 * Z_f_complex))
-    I_LLG_pu = abs(3.0 * I0_LLG)
-    
-    # Fault Magnitudes (Amps) - using Zone 3 base current
-    I_LLL_A = I_LLL_pu * I_base3
-    I_LL_A = I_LL_pu * I_base3
-    I_LG_A = I_LG_pu * I_base3
-    I_LLG_A = I_LLG_pu * I_base3
-
-    # UI Tabs
-    tab1, tab2, tab3 = st.tabs(["📊 Key Results", "🔬 Detailed Impedance Network", "💥 Fault Analysis"])
+    tab1, tab2 = st.tabs(["📊 Key Results", "🔬 Detailed Impedance Network"])
     
     with tab1:
         st.markdown("### 🎯 Final Voltage Regulation")
@@ -168,28 +127,66 @@ if app_mode == "1. Radial System (Voltage & Faults)":
         c2.markdown(f'<div class="result-card"><b>Line</b><br>{Z_line_pu.real:.4f} + j{Z_line_pu.imag:.4f} pu</div>', unsafe_allow_html=True)
         c3.markdown(f'<div class="result-card"><b>T2</b><br>j{T2_X_new:.4f} pu</div>', unsafe_allow_html=True)
         st.success(f"**Total Series Impedance:** {Z_series_terminals.real:.4f} + j{Z_series_terminals.imag:.4f} pu")
-
-    with tab3:
-        st.markdown("### 💥 Short Circuit Fault Analysis")
-        st.info("Calculates symmetrical and unsymmetrical faults at the **Load Bus (Zone 3)** using Thevenin equivalent sequence impedances.")
-        
-        f1, f2 = st.columns(2)
-        f1.metric("Three-Phase (LLL & LLLG)", f"{I_LLL_A:,.0f} A", f"{I_LLL_pu:.4f} pu", delta_color="off")
-        f2.metric("Line-to-Line (LL)", f"{I_LL_A:,.0f} A", f"{I_LL_pu:.4f} pu", delta_color="off")
-        
-        f3, f4 = st.columns(2)
-        f3.metric("Line-to-Ground (LG)", f"{I_LG_A:,.0f} A", f"{I_LG_pu:.4f} pu", delta_color="off")
-        f4.metric("Double Line-to-Ground (LLG)", f"{I_LLG_A:,.0f} A", f"{I_LLG_pu:.4f} pu", delta_color="off")
-        
-        st.markdown("<hr>", unsafe_allow_html=True)
-        st.markdown("#### ⚙️ Thevenin Sequence Impedances (at Fault Point)")
-        st.markdown(f"* **Positive Sequence ($Z_1$):** {Z1_fault.real:.4f} + j{Z1_fault.imag:.4f} pu")
-        st.markdown(f"* **Negative Sequence ($Z_2$):** {Z2_fault.real:.4f} + j{Z2_fault.imag:.4f} pu")
-        st.markdown(f"* **Zero Sequence ($Z_0$):** {Z0_fault.real:.4f} + j{Z0_fault.imag:.4f} pu")
         # =====================================================================
-# APP 2: MULTI-BUS MESHED SYSTEM (EXAMPLE 5.9)
+# APP 2: UNIVERSAL FAULT CALCULATOR (NEW)
 # =====================================================================
-elif app_mode == "2. Multi-Bus Meshed (Example 5.9 Auto-Matrix)":
+elif app_mode == "2. Fault Analysis Calculator":
+    st.markdown('<p class="main-header">💥 Universal Fault Calculator</p>', unsafe_allow_html=True)
+    st.markdown('<p class="sub-text">Input Thevenin Sequence Impedances to solve any fault condition</p>', unsafe_allow_html=True)
+
+    st.sidebar.header("⚙️ Fault Parameters")
+    V_pre = st.sidebar.number_input("Pre-fault Voltage (pu)", value=1.00)
+    Base_MVA = st.sidebar.number_input("System Base MVA", value=30.0)
+    Base_kV = st.sidebar.number_input("Fault Location Base kV", value=11.0)
+    
+    with st.sidebar.expander("Thevenin Sequence Impedances (PU)", expanded=True):
+        st.write("Positive Sequence ($Z_1$)")
+        z1_r = st.number_input("Z1 R", value=0.0258)
+        z1_x = st.number_input("Z1 X", value=0.3615)
+        st.write("Negative Sequence ($Z_2$)")
+        z2_r = st.number_input("Z2 R", value=0.0258)
+        z2_x = st.number_input("Z2 X", value=0.3615)
+        st.write("Zero Sequence ($Z_0$)")
+        z0_r = st.number_input("Z0 R", value=0.0774)
+        z0_x = st.number_input("Z0 X", value=1.0845)
+    
+    with st.sidebar.expander("Fault Impedance ($Z_f$)", expanded=False):
+        zf_r = st.number_input("Zf R", value=0.0)
+        zf_x = st.number_input("Zf X", value=0.0)
+
+    # Complex Assignments
+    Z1 = complex(z1_r, z1_x)
+    Z2 = complex(z2_r, z2_x)
+    Z0 = complex(z0_r, z0_x)
+    Zf = complex(zf_r, zf_x)
+    
+    I_base = (Base_MVA * 1000) / (math.sqrt(3) * Base_kV)
+
+    # Fault Math Engine
+    I_LLL_pu = abs(V_pre / Z1)
+    I_LL_pu = abs((math.sqrt(3) * V_pre) / (Z1 + Z2))
+    I_LG_pu = abs((3.0 * V_pre) / (Z1 + Z2 + Z0 + complex(3*zf_r, 3*zf_x)))
+    
+    Z_p = (Z2 * (Z0 + complex(3*zf_r, 3*zf_x))) / (Z2 + Z0 + complex(3*zf_r, 3*zf_x))
+    I1_LLG = V_pre / (Z1 + Z_p)
+    I0_LLG = -I1_LLG * (Z2 / (Z2 + Z0 + complex(3*zf_r, 3*zf_x)))
+    I_LLG_pu = abs(3.0 * I0_LLG)
+
+    st.markdown("### ⚡ Short Circuit Results")
+    f1, f2 = st.columns(2)
+    f1.metric("Three-Phase (LLL)", f"{I_LLL_pu * I_base:,.0f} A", f"{I_LLL_pu:.4f} pu", delta_color="off")
+    f2.metric("Line-to-Line (LL)", f"{I_LL_pu * I_base:,.0f} A", f"{I_LL_pu:.4f} pu", delta_color="off")
+    
+    f3, f4 = st.columns(2)
+    f3.metric("Line-to-Ground (LG)", f"{I_LG_pu * I_base:,.0f} A", f"{I_LG_pu:.4f} pu", delta_color="off")
+    f4.metric("Double Line-to-Ground (LLG)", f"{I_LLG_pu * I_base:,.0f} A", f"{I_LLG_pu:.4f} pu", delta_color="off")
+    
+    st.info(f"**Base Current at Fault Location:** {I_base:.2f} A")
+
+# =====================================================================
+# APP 3: MULTI-BUS MESHED SYSTEM (EXAMPLE 5.9)
+# =====================================================================
+elif app_mode == "3. Multi-Bus Meshed (Example 5.9 Auto-Matrix)":
     st.markdown('<p class="main-header">🌐 Multi-Bus Network Analyzer</p>', unsafe_allow_html=True)
     st.markdown('<p class="sub-text">Converts raw parameters to PU and builds Y-Bus automatically</p>', unsafe_allow_html=True)
 
@@ -208,7 +205,6 @@ elif app_mode == "2. Multi-Bus Meshed (Example 5.9 Auto-Matrix)":
         T1_X_pu_m = st.number_input("T1 Reactance (pu)", value=0.15, step=0.01, key="m_t1x")
 
     with st.sidebar.expander("Transformer 2 (Node 2 to 4)", expanded=False):
-        st.caption("Note: Enter 3-phase equivalent values")
         T2_MVA_m = st.number_input("T2 3-Phase MVA", value=150.0, key="m_t2mva")
         T2_kV_Z3_m = st.number_input("T2 Gen-Side kV (Delta)", value=6.6, key="m_t2kv3")
         T2_kV_Z2_m = st.number_input("T2 Line-Side kV (Y)", value=228.63, key="m_t2kv2") 
@@ -252,25 +248,19 @@ elif app_mode == "2. Multi-Bus Meshed (Example 5.9 Auto-Matrix)":
     st.markdown("### 📊 Step 1: Per-Unit Conversion")
     c1, c2 = st.columns(2)
     with c1:
-        st.markdown(f"""
-        <div class="result-card" style="border-left-color: #FFC107;">
+        st.markdown(f"""<div class="result-card" style="border-left-color: #FFC107;">
             <h4>Generators & Transformers</h4>
-            <b>T1 Reactance (Node 1-3):</b> j{T1_X_new_m:.4f} pu <br>
-            <b>T2 Reactance (Node 2-4):</b> j{T2_X_new_m:.4f} pu <br>
+            <b>T1 Reactance:</b> j{T1_X_new_m:.4f} pu <br>
+            <b>T2 Reactance:</b> j{T2_X_new_m:.4f} pu <br>
             <b>G1 Reactance:</b> j{G1_X_new_m:.4f} pu <br>
-            <b>G2 Reactance:</b> j{G2_X_new_m:.4f} pu
-        </div>
-        """, unsafe_allow_html=True)
+            <b>G2 Reactance:</b> j{G2_X_new_m:.4f} pu</div>""", unsafe_allow_html=True)
     with c2:
-        st.markdown(f"""
-        <div class="result-card" style="border-left-color: #FFC107;">
+        st.markdown(f"""<div class="result-card" style="border-left-color: #FFC107;">
             <h4>Transmission Lines & Load</h4>
-            <b>Line 3-4 ($Z_{{34}}$):</b> {Z34_pu.real:.4f} + j{Z34_pu.imag:.4f} pu <br>
-            <b>Line 3-5 ($Z_{{35}}$):</b> {Z35_pu.real:.4f} + j{Z35_pu.imag:.4f} pu <br>
-            <b>Line 4-5 ($Z_{{45}}$):</b> {Z45_pu.real:.4f} + j{Z45_pu.imag:.4f} pu <br>
-            <b>Load Apparent Power:</b> {Load_pu:.4f} pu
-        </div>
-        """, unsafe_allow_html=True)
+            <b>Line 3-4:</b> {Z34_pu.real:.4f} + j{Z34_pu.imag:.4f} pu <br>
+            <b>Line 3-5:</b> {Z35_pu.real:.4f} + j{Z35_pu.imag:.4f} pu <br>
+            <b>Line 4-5:</b> {Z45_pu.real:.4f} + j{Z45_pu.imag:.4f} pu <br>
+            <b>Load Apparent Power:</b> {Load_pu:.4f} pu</div>""", unsafe_allow_html=True)
 
     y13 = 1.0 / complex(0, T1_X_new_m)
     y24 = 1.0 / complex(0, T2_X_new_m)
@@ -297,11 +287,10 @@ elif app_mode == "2. Multi-Bus Meshed (Example 5.9 Auto-Matrix)":
     st.markdown("<hr>", unsafe_allow_html=True)
     st.markdown("### 🧮 Step 2: Automatic System Admittance Matrix ($Y_{bus}$)")
     st.dataframe(formatted_Y, use_container_width=True)
-
+    # =====================================================================
+# APP 4: ULTIMATE RAW-TO-MATRIX BUILDER (INFINITE COMPONENTS)
 # =====================================================================
-# APP 3: ULTIMATE RAW-TO-MATRIX BUILDER (INFINITE COMPONENTS)
-# =====================================================================
-elif app_mode == "3. Ultimate Auto-Matrix (Raw Data Input)":
+elif app_mode == "4. Ultimate Auto-Matrix (Raw Data Input)":
     st.markdown('<p class="main-header">🚀 Ultimate Auto-Matrix Builder</p>', unsafe_allow_html=True)
     st.markdown('<p class="sub-text">Input RAW system data -> Auto PU Conversion -> Dynamic Y-Bus matrix</p>', unsafe_allow_html=True)
 
@@ -346,7 +335,7 @@ elif app_mode == "3. Ultimate Auto-Matrix (Raw Data Input)":
             Y_bus = np.zeros((max_bus, max_bus), dtype=complex)
 
             st.markdown("### 📊 Calculated Per-Unit Values")
-            st.write("**Generators & Transformers (PU Adjusted to System Base):**")
+            st.write("**Generators & Transformers:**")
             for _, row in equip_df.iterrows():
                 from_bus = int(row["From Bus"])
                 to_bus = int(row["To Bus"])
@@ -361,7 +350,7 @@ elif app_mode == "3. Ultimate Auto-Matrix (Raw Data Input)":
                     Y_bus[from_bus - 1, to_bus - 1] -= Y
                     Y_bus[to_bus - 1, from_bus - 1] -= Y
 
-            st.write("**Transmission Lines (Ohms to PU):**")
+            st.write("**Transmission Lines:**")
             for _, row in line_df.iterrows():
                 from_bus = int(row["From Bus"])
                 to_bus = int(row["To Bus"])
