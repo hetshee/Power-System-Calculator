@@ -10,7 +10,6 @@ st.set_page_config(page_title="Power System Analyzer Suite", page_icon="⚡", la
 # 2. Custom CSS
 st.markdown("""
 <style>
-    [data-testid="stToolbar"] {visibility: hidden;}
     .main-header { font-size: 2.5rem; color: #1E88E5; text-align: center; font-weight: 800; margin-bottom: 0px; }
     .sub-text { text-align: center; color: #6c757d; font-size: 1.1rem; margin-bottom: 30px; }
     .result-card { background-color: #f8f9fa; padding: 20px; border-radius: 10px; border-left: 5px solid #1E88E5; box-shadow: 2px 2px 10px rgba(0,0,0,0.05); text-align: center; }
